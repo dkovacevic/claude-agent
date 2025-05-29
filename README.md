@@ -44,14 +44,18 @@ The application follows a clean, modular architecture:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/claude-agent-cli.git
-cd claude-agent-cli
+git clone https://github.com/dkovacevic/claude-agent.git
+cd claude-agent
 
 # Build the application
-go build -o claude-cli
+go build -o agent ./src
 
 # Run the application
-./claude-cli
+./agent
+
+# Or run it like
+go run ./src
+
 ```
 
 ### Usage

@@ -6,18 +6,19 @@ import (
     "fmt"
 
     "github.com/anthropics/anthropic-sdk-go"
+    "agent/src/tools"
 )
 
 type Agent struct {
     client         *anthropic.Client
     getUserMessage func() (string, bool)
-    tools          []ToolDefinition
+    tools          []tools.ToolDefinition
 }
 
 func NewAgent(
     client *anthropic.Client,
     getUserMessage func() (string, bool),
-    tools []ToolDefinition,
+    tools []tools.ToolDefinition,
 ) *Agent {
     return &Agent{client, getUserMessage, tools}
 }

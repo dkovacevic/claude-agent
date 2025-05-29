@@ -7,6 +7,7 @@ import (
     "os"
 
     "github.com/anthropics/anthropic-sdk-go"
+    "agent/src/tools"
 )
 
 func main() {
@@ -20,13 +21,13 @@ func main() {
         return scanner.Text(), true
     }
 
-    tools := []ToolDefinition{
-        ReadFileDefinition,
-        ListFilesDefinition,
-        EditFileDefinition,
-        GitCloneDefinition,
-        CreateDirDefinition,
-        CreateFileDefinition,
+    tools := []tools.ToolDefinition{
+        tools.ReadFileDefinition,
+        tools.ListFilesDefinition,
+        tools.EditFileDefinition,
+        tools.GitCloneDefinition,
+        tools.CreateDirDefinition,
+        tools.CreateFileDefinition,
     }
     agent := NewAgent(&client, getUserMessage, tools)
 
