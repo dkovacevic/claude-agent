@@ -1,88 +1,88 @@
-# Schema Generator 📊
+# JSON Schema Generation (schema.go)
+
+![Component](https://img.shields.io/badge/Component-Utility-orange)
 
 ## Overview
 
-The `schema.go` file provides a powerful utility for generating JSON schemas from Go structs. This functionality is essential for creating properly typed tool definitions that Claude can understand and use correctly.
+`schema.go` provides a powerful utility function that automatically generates JSON Schema for tool parameters from Go struct types. This enables seamless integration with Claude's tool system while maintaining type safety and parameter validation.
 
-## Core Function
+## Implementation
 
-```go
-func GenerateSchema[T any]() anthropic.ToolInputSchemaParam
-```
-
-This generic function takes a type parameter `T` and returns a JSON schema that describes the structure of that type in a format compatible with the Anthropic API.
-
-## Implementation Details
-
-### Using Go Generics
-
-The function leverages Go's generics to provide a type-safe way to generate schemas for any struct type. This ensures that the schema accurately reflects the structure and constraints of the Go types.
-
-### Reflector Configuration
+### GenerateSchema Function
 
 ```go
-reflector := jsonschema.Reflector{
-    AllowAdditionalProperties: false,
-    DoNotReference:            true,
+func GenerateSchema[T any]() anthropic.ToolInputSchemaParam {
+    reflector := jsonschema.Reflector{
+        AllowAdditionalProperties: false,
+        DoNotReference:            true,
+    }
+    var v T
+    sch := reflector.Reflect(v)
+    return anthropic.ToolInputSchemaParam{
+        Properties: sch.Properties,
+    }
 }
 ```
 
-The schema generator is configured with specific settings:
+This generic function:
+1. Creates a jsonschema reflector with appropriate settings
+2. Instantiates an empty value of type T
+3. Uses reflection to generate a JSON schema from the type
+4. Formats the schema to match Anthropic's API requirements
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `AllowAdditionalProperties` | `false` | Enforces strict schema validation by disallowing properties not defined in the struct |
-| `DoNotReference` | `true` | Ensures the schema is self-contained without external references |
+## Key Features
 
-### Schema Generation Process
+### Type Safety
 
-1. Creates a zero value of the specified type
-2. Uses reflection to analyze the structure of the type
-3. Generates a JSON schema that describes the fields, types, and constraints
-4. Returns the schema in the format expected by the Anthropic API
+By using Go's generics, the function ensures type safety between:
+- The input type definition
+- The JSON schema generation
+- The runtime parameter parsing
 
-## Usage Example
+### Clean API Integration
 
+The function produces schema in exactly the format expected by the Anthropic API:
 ```go
-type MyToolInput struct {
-    Name    string `json:"name" jsonschema_description:"The name parameter."`
-    Count   int    `json:"count" jsonschema_description:"The count parameter."`
-    Enabled bool   `json:"enabled,omitempty" jsonschema_description:"Optional enabled flag."`
-}
-
-var MyToolInputSchema = GenerateSchema[MyToolInput]()
-
-var MyToolDefinition = ToolDefinition{
-    Name:        "my_tool",
-    Description: "A description of my tool.",
-    InputSchema: MyToolInputSchema,
-    Function:    MyToolFunction,
+anthropic.ToolInputSchemaParam{
+    Properties: sch.Properties,
 }
 ```
 
-## Struct Tags
+### Configuration
 
-The schema generator recognizes several tags that can be used to customize the generated schema:
+The reflector is configured with:
+- `AllowAdditionalProperties: false` - Strictly enforce the schema
+- `DoNotReference: true` - Inline all property definitions for clarity
 
-| Tag | Description |
-|-----|-------------|
-| `json:"name"` | Specifies the JSON field name |
-| `json:",omitempty"` | Marks a field as optional |
-| `jsonschema_description:"..."` | Provides a description for the field in the schema |
+## Usage Pattern
 
-## Integration with Anthropic API
+Throughout the codebase, this function is used consistently:
 
-The schema is returned in the format expected by the Anthropic API's tool definition. This ensures that Claude has proper type information when using the tools, which enables:
+```go
+// Define input structure with JSON tags and descriptions
+type SomeToolInput struct {
+    Param string `json:"param" jsonschema_description:"Description of param"`
+}
 
-1. More accurate tool usage
-2. Better type checking on inputs
-3. Appropriate handling of optional vs. required parameters
+// Generate schema automatically
+var SomeToolInputSchema = GenerateSchema[SomeToolInput]()
+
+// Use in tool definition
+var SomeToolDefinition = ToolDefinition{
+    // ...
+    InputSchema: SomeToolInputSchema,
+    // ...
+}
+```
 
 ## Benefits
 
-Using a schema generator rather than hardcoding JSON schemas provides several advantages:
+1. **Consistency**: Ensures all tools follow the same schema pattern
+2. **Maintainability**: Changes to input structures automatically update schemas
+3. **Readability**: Keeps schema definitions close to the corresponding types
+4. **Validation**: Leverages Go's type system for parameter validation
 
-1. **Type Safety**: The schema always matches the actual Go types
-2. **DRY Principle**: Avoids duplication between type definitions and schemas
-3. **Maintainability**: Changes to types automatically reflect in the schemas
-4. **Consistency**: All tools use the same schema generation approach
+## Dependencies
+
+- [github.com/invopop/jsonschema](https://github.com/invopop/jsonschema): Library for JSON Schema reflection
+- [github.com/anthropics/anthropic-sdk-go](https://github.com/anthropics/anthropic-sdk-go): Anthropic Go SDK

@@ -1,21 +1,25 @@
-# List Files Tool 📂
+# List Files Tool (list_files.go)
+
+![Tool](https://img.shields.io/badge/Tool-File%20System-green)
 
 ## Overview
 
-The `list_files.go` module implements a tool that allows Claude to enumerate files and directories within a specified path. This tool provides Claude with "eyes" into the file system, enabling it to make informed decisions about file operations and provide contextual assistance to users.
+The `list_files` tool enables Claude to discover files and directories within the file system. This provides Claude with awareness of the available files and directories, allowing it to navigate the file structure and recommend relevant files for reading or editing.
 
-## Tool Definition
+## Implementation
+
+### Tool Definition
 
 ```go
 var ListFilesDefinition = ToolDefinition{
     Name:        "list_files",
-    Description: "List files and directories at a given path. Defaults to current directory.",
+    Description: "List files and directories at a given path. If no path is provided, lists files in the current directory.",
     InputSchema: ListFilesInputSchema,
     Function:    ListFiles,
 }
 ```
 
-## Input Schema
+### Input Parameters
 
 ```go
 type ListFilesInput struct {
@@ -23,85 +27,83 @@ type ListFilesInput struct {
 }
 ```
 
-| Parameter | Description |
-|-----------|-------------|
-| `Path`    | The directory path to list files from (optional, defaults to current directory) |
+The tool accepts a single optional parameter:
+- **path**: The directory path to list (defaults to current directory if omitted)
 
-## Functionality
+### Function Implementation
 
-The `ListFiles` function:
+```go
+func ListFiles(input json.RawMessage) (string, error) {
+    var in ListFilesInput
+    if err := json.Unmarshal(input, &in); err != nil {
+        return "", err
+    }
+    dir := in.Path
+    if dir == "" {
+        dir = "."
+    }
 
-1. Accepts an optional path parameter (defaults to current directory if not specified)
-2. Recursively walks through the directory structure
-3. Builds a comprehensive list of all files and directories
-4. Returns the list as a JSON array string
+    var files []string
+    err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+        if err != nil {
+            return err
+        }
+        rel, err := filepath.Rel(dir, path)
+        if err != nil {
+            return err
+        }
+        if rel != "." {
+            if info.IsDir() {
+                files = append(files, rel+"/")
+            } else {
+                files = append(files, rel)
+            }
+        }
+        return nil
+    })
+    if err != nil {
+        return "", err
+    }
+    out, err := json.Marshal(files)
+    return string(out), err
+}
+```
 
-## Implementation Details
+The implementation:
+1. Parses the input parameters from JSON
+2. Defaults to the current directory if no path is provided
+3. Uses `filepath.Walk` to recursively traverse the directory structure
+4. Builds a list of files and directories, marking directories with a trailing slash
+5. Returns the list as a JSON array
 
-### Recursive Directory Traversal
+## Key Features
 
-The tool uses Go's `filepath.Walk` function to recursively traverse the directory structure, which offers several advantages:
+- **Directory Indication**: Directories are marked with a trailing slash for easy identification
+- **Relative Paths**: All paths are relative to the requested directory
+- **Recursive Listing**: Shows the complete directory structure, not just the top level
+- **Error Handling**: Properly handles permission errors and other file system issues
 
-- Handles nested directories automatically
-- Follows symbolic links correctly
-- Manages error cases gracefully
+## Usage Example
 
-### Path Formatting
-
-The function formats the output to:
-- Make paths relative to the requested directory
-- Add trailing slashes to directories for easy identification
-- Exclude the root directory itself from the results
-
-### JSON Output
-
-The results are returned as a JSON array of strings, making it easy for Claude to parse and work with the data.
-
-## Example Usage
-
-From Claude's perspective:
+When Claude needs to discover files, it might use this tool as follows:
 
 ```
-You: What files are in the current directory?
-
 Claude: Let me check what files are in the current directory.
 
 tool: list_files({})
-[".git/", ".idea/", "agent", "agent.go", "docs/", "edit_file.go", "go.mod", "go.sum", "list_files.go", "main.go", "read_file.go", "schema.go", "tools.go"]
+["README.md", "go.mod", "go.sum", "src/", "docs/"]
 
-Claude: Here are the files and directories in the current location:
-
-Files:
-- agent.go
-- edit_file.go
+Claude: I can see the following files and directories:
+- README.md
 - go.mod
 - go.sum
-- list_files.go
-- main.go
-- read_file.go
-- schema.go
-- tools.go
-- agent (executable)
+- src/ (directory)
+- docs/ (directory)
 
-Directories:
-- .git/
-- .idea/
-- docs/
-
-Is there anything specific you'd like to know about these files or directories?
+Would you like me to examine any of these files or list the contents of one of the directories?
 ```
 
-## Error Handling
+## Related Tools
 
-The tool handles several potential error scenarios:
-
-| Error Scenario | Handling |
-|----------------|----------|
-| Invalid input JSON | Returns a descriptive error message |
-| Directory not found | Returns appropriate error |
-| Permission issues | Propagates the system error message |
-| Path traversal errors | Forwards the specific error |
-
-## Performance Considerations
-
-For very large directories with many files, this tool will return all entries, which could potentially be a large response. In most typical usage scenarios, this is not a concern, but it's something to be aware of when working with directories containing thousands of files.
+- **read_file**: For reading the contents of files discovered via list_files
+- **edit_file**: For modifying files discovered via list_files

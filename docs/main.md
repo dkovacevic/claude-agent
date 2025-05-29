@@ -1,10 +1,12 @@
-# Main Application Entry Point 🚀
+# Main Application (main.go)
+
+![Component](https://img.shields.io/badge/Component-Entry%20Point-blue)
 
 ## Overview
 
-The `main.go` file serves as the entry point for the Claude Agent CLI application. It initializes all necessary components, configures the agent, and starts the main interaction loop.
+`main.go` serves as the entry point for the Claude Agent CLI application. It initializes the core components, sets up the required dependencies, and launches the agent to begin processing user interactions.
 
-## Key Components
+## Implementation Details
 
 ### Imports
 
@@ -16,99 +18,77 @@ import (
     "os"
 
     "github.com/anthropics/anthropic-sdk-go"
+    "agent/src/tools"
 )
 ```
 
-The application uses standard Go libraries for I/O operations and the official Anthropic SDK for Go to communicate with the Claude API.
+The main package imports:
+- Standard library packages for I/O operations and context management
+- The Anthropic SDK for Claude integration
+- The application's custom tools package
 
 ### Main Function
 
-```go
-func main() {
-    client := anthropic.NewClient()
+The `main()` function performs several key tasks:
 
-    scanner := bufio.NewScanner(os.Stdin)
-    getUserMessage := func() (string, bool) {
-        if !scanner.Scan() {
-            return "", false
-        }
-        return scanner.Text(), true
-    }
+1. **Initializes the Anthropic Client**: Creates a new client instance that will handle API communication with Claude.
+   ```go
+   client := anthropic.NewClient()
+   ```
 
-    tools := []ToolDefinition{
-        ReadFileDefinition,
-        ListFilesDefinition,
-        EditFileDefinition,
-    }
-    agent := NewAgent(&client, getUserMessage, tools)
+2. **Sets up User Input Handling**: Creates a function that reads user input from the terminal.
+   ```go
+   scanner := bufio.NewScanner(os.Stdin)
+   getUserMessage := func() (string, bool) {
+       if !scanner.Scan() {
+           return "", false
+       }
+       return scanner.Text(), true
+   }
+   ```
 
-    if err := agent.Run(context.TODO()); err != nil {
-        fmt.Printf("Error: %s\n", err)
-    }
-}
-```
+3. **Configures Available Tools**: Defines the set of tools that Claude can use during conversations.
+   ```go
+   tools := []tools.ToolDefinition{
+       tools.ReadFileDefinition,
+       tools.ListFilesDefinition,
+       tools.EditFileDefinition,
+       tools.GitCloneDefinition,
+       tools.CreateDirDefinition,
+       tools.CreateFileDefinition,
+   }
+   ```
 
-## Initialization Process
+4. **Creates and Runs the Agent**: Instantiates the agent with the necessary dependencies and starts its execution.
+   ```go
+   agent := NewAgent(&client, getUserMessage, tools)
+   if err := agent.Run(context.TODO()); err != nil {
+       fmt.Printf("Error: %s\n", err)
+   }
+   ```
 
-The main function performs several important initialization steps:
+## Key Features
 
-1. **API Client**: Creates a new Anthropic API client using default configuration
-2. **Input Handler**: Sets up a function to read user input from stdin
-3. **Tools Registration**: Registers all available tools with the agent
-4. **Agent Creation**: Instantiates the agent with the configured components
-5. **Execution**: Starts the agent's main loop with a background context
+- **Simple, Clean Design**: The main function is concise and focused solely on initialization and setup.
+- **Dependency Injection**: Core dependencies (client, input handling, tools) are cleanly passed to the agent.
+- **Error Handling**: Proper error handling for agent execution.
 
-## User Input Handling
+## Extensibility
 
-The application uses a standard bufio Scanner to read user input from the command line:
+Adding new tools to the application is straightforward:
+1. Implement the tool in the tools package
+2. Add the tool definition to the tools list in `main.go`
 
-```go
-scanner := bufio.NewScanner(os.Stdin)
-getUserMessage := func() (string, bool) {
-    if !scanner.Scan() {
-        return "", false
-    }
-    return scanner.Text(), true
-}
-```
+No other changes to the main application flow are required.
 
-This function returns the input text and a boolean indicating success. If reading fails (e.g., due to EOF), it returns `false` to signal termination.
+## Dependencies
 
-## Available Tools
+- **Agent**: Requires the `NewAgent` function from the main package to create the agent instance.
+- **Tools**: Depends on tool definitions from the tools package.
+- **Anthropic SDK**: Requires the Anthropic API client for Claude communication.
 
-The main function registers three tools with the agent:
+## Environment Requirements
 
-1. **ReadFileDefinition**: Allows reading file contents
-2. **ListFilesDefinition**: Enables listing files in directories
-3. **EditFileDefinition**: Permits creating or editing files
-
-Additional tools can be added to this list to extend the agent's capabilities.
-
-## Error Handling
-
-The application implements simple but effective error handling:
-
-```go
-if err := agent.Run(context.TODO()); err != nil {
-    fmt.Printf("Error: %s\n", err)
-}
-```
-
-Any errors that occur during the agent's execution are caught and printed to the console before the application exits.
-
-## Context Management
-
-The application uses `context.TODO()` as a placeholder context. In a more sophisticated implementation, this could be replaced with a cancelable context to allow for graceful shutdown.
-
-## Authentication
-
-The Anthropic client is initialized with default settings, which means it will look for the `ANTHROPIC_API_KEY` environment variable to authenticate API requests.
-
-## Extension Points
-
-The main function can be extended in several ways:
-
-1. **Additional Tools**: Register more tools in the tools slice
-2. **Custom Input**: Replace the getUserMessage function with a custom implementation
-3. **Configuration**: Add command-line flags or config file parsing
-4. **Context Management**: Implement proper context handling with cancellation
+The application expects:
+- The `ANTHROPIC_API_KEY` environment variable to be set with a valid API key
+- Standard input/output for terminal interaction

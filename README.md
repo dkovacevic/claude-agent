@@ -1,118 +1,86 @@
-# Claude Agent CLI 🤖
+# Claude Agent CLI: Go Project Documentation
 
 ![Claude Agent CLI](https://img.shields.io/badge/Claude-AI%20Assistant-5A67D8)
 ![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-## Overview
+## Project Overview
 
-Claude Agent CLI is a powerful command-line interface that enables direct interaction with Anthropic's Claude AI assistant. This application leverages Claude's capabilities through a seamless terminal experience, allowing users to:
+Claude Agent CLI is an elegant, powerful command-line application that facilitates direct interaction with Anthropic's Claude AI assistant. This project seamlessly integrates Claude's advanced AI capabilities with a terminal interface, allowing users to engage in natural language conversations while providing Claude with the ability to interact with the local file system through specialized tools.
 
-- Engage in natural language conversations with Claude
-- Use specialized tools for file operations directly from the chat interface
-- Build sophisticated workflows combining AI reasoning with file system access
+## Core Architecture
 
-## Key Features
-
-- **Interactive Chat Interface**: Engage with Claude directly in your terminal
-- **File System Integration**: Allow Claude to read, list, and edit files on your system
-- **Tool-augmented AI**: Claude can use specialized tools to perform actions beyond conversation
-- **Extensible Architecture**: Add new tools and capabilities with minimal code changes
-
-## Architecture
-
-The application follows a clean, modular architecture:
+The project follows a clean, modular architecture built around several key components:
 
 ```
-├── agent.go         # Core agent implementation
-├── tools.go         # Tool definition interface
-├── main.go          # Application entry point
-├── schema.go        # JSON schema generator
-├── read_file.go     # File reading tool
-├── list_files.go    # File listing tool
-├── edit_file.go     # File editing tool
+src/
+├── main.go             # Application entry point and initialization
+├── agent.go            # Core agent implementation handling Claude interaction
+└── tools/              # Directory containing all tool implementations
+    ├── tools.go        # Core tool definition interface
+    ├── schema.go       # JSON schema generator for tool parameters
+    ├── read_file.go    # Tool to read file contents
+    ├── list_files.go   # Tool to list files and directories
+    ├── edit_file.go    # Tool to modify file contents
+    ├── create_dir.go   # Tool to create directories
+    ├── create_file.go  # Tool to create new files
+    └── git_clone.go    # Tool to clone git repositories
 ```
 
-## Getting Started
+## Key Components
 
-### Prerequisites
+### Agent Framework
 
-- Go 1.24 or higher
-- Anthropic API key set in your environment as `ANTHROPIC_API_KEY`
+The heart of the application is the agent framework which:
+- Maintains a conversation with the user through the terminal
+- Sends user messages to Claude via the Anthropic API
+- Processes Claude's responses, particularly handling tool use
+- Executes tools on behalf of Claude and returns results
+- Manages the conversation state and flow
 
-### Installation
+### Tool System
 
-```bash
-# Clone the repository
-git clone https://github.com/dkovacevic/claude-agent.git
-cd claude-agent
-
-# Build the application
-go build -o agent ./src
-
-# Run the application
-./agent
-
-# Or run it like
-go run ./src
-
-```
-
-### Usage
-
-Once running, you can interact with Claude directly in your terminal:
-
-```
-You: Hello Claude, can you help me with something?
-Claude: Hello! I'm Claude, and I'd be happy to help you. What can I assist you with today?
-
-You: Can you show me what files are in this directory?
-Claude: I'll check what files are in the current directory for you.
-
-tool: list_files({})
-[".git/", ".idea/", "agent", "agent.go", "docs/", "edit_file.go", "go.mod", "go.sum", "list_files.go", "main.go", "read_file.go", "schema.go", "tools.go"]
-
-Claude: Here are the files and directories in the current location:
-
-1. .git/ (directory)
-2. .idea/ (directory)
-3. agent (executable)
-4. agent.go
-5. docs/ (directory)
-6. edit_file.go
-7. go.mod
-8. go.sum
-9. list_files.go
-10. main.go
-11. read_file.go
-12. schema.go
-13. tools.go
-
-Is there a specific file you'd like to examine or modify?
-```
+The tool system provides Claude with the ability to perform actions beyond conversation:
+- Standardized tool definition interface
+- Automatic JSON schema generation for tool parameters
+- Clean separation between tool definition and implementation
+- Easily extensible to add new capabilities
 
 ## Available Tools
 
-The Claude Agent CLI comes with three built-in tools that Claude can use:
+The project includes several powerful tools that Claude can use:
 
-1. **read_file**: Reads the contents of a file
-2. **list_files**: Lists files and directories at a given path
-3. **edit_file**: Edits file contents by replacing text
+| Tool | Description |
+|------|-------------|
+| `read_file` | Reads the contents of a file at a specified path |
+| `list_files` | Lists all files and directories at a given path |
+| `edit_file` | Modifies file contents by replacing text |
+| `create_dir` | Creates a directory including any necessary parent directories |
+| `create_file` | Creates a new file with specified content |
+| `git_clone` | Clones a public Git repository to a local directory |
 
-See the individual tool documentation for more details.
+## Technical Implementation
 
-## Extending with New Tools
+The project is implemented in Go and leverages several key technologies:
 
-The application is designed to be easily extensible. To add a new tool:
+- **Go 1.24+**: Modern Go features for clean, efficient code
+- **Anthropic API**: Direct integration with Claude via the official Go SDK
+- **JSON Schema**: Structured parameter definitions for tools
+- **Terminal I/O**: Clean terminal interface for user interaction
 
-1. Create a new file following the pattern of existing tool implementations
-2. Define the tool's input schema, function logic, and description
-3. Add the tool to the list in `main.go`
+## Getting Started
 
-## License
+To run the project:
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+1. Ensure you have Go 1.24+ installed
+2. Set your Anthropic API key in the environment as `ANTHROPIC_API_KEY`
+3. Clone the repository
+4. Run with `go run ./src` or build with `go build -o agent ./src`
 
----
+## Further Reading
 
-*For more detailed information about each component, please refer to the specific documentation files in this directory.*
+For detailed information about specific components, please refer to the following documentation:
+
+- [Main Application](docs/main.md) - Entry point and initialization
+- [Agent Implementation](docs/agent.md) - Core conversation handling
+- [Tool Framework](docs/tools.md) - Tool system architecture

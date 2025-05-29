@@ -1,52 +1,39 @@
-# Agent Module 🧠
+# Agent Implementation (agent.go)
+
+![Component](https://img.shields.io/badge/Component-Core-red)
 
 ## Overview
 
-The `agent.go` file contains the core logic for the Claude Agent CLI. It manages the conversation between the user and Claude, handles tool invocation, and orchestrates the application's main loop.
+`agent.go` contains the core implementation of the Agent that manages the conversation flow between the user, Claude, and the execution of tools. It acts as the central orchestration component that ties together all aspects of the application.
 
-## Key Components
-
-### Agent Struct
+## Agent Structure
 
 ```go
 type Agent struct {
     client         *anthropic.Client
     getUserMessage func() (string, bool)
-    tools          []ToolDefinition
+    tools          []tools.ToolDefinition
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `client` | Anthropic API client for communicating with Claude |
-| `getUserMessage` | Function that retrieves input from the user |
-| `tools` | Slice of available tools that Claude can use |
+The Agent structure encapsulates:
+- An Anthropic client for API communication
+- A function to retrieve user input
+- A list of available tool definitions
 
-### Constructor
+## Key Functions
+
+### NewAgent
 
 ```go
 func NewAgent(
     client *anthropic.Client,
     getUserMessage func() (string, bool),
-    tools []ToolDefinition,
+    tools []tools.ToolDefinition,
 ) *Agent
 ```
 
-Creates a new Agent instance with the specified Anthropic client, user input function, and available tools.
-
-### Main Loop
-
-The `Run` method implements the main conversation loop:
-
-1. Get user input
-2. Send the conversation to Claude
-3. Process Claude's response:
-   - Display text content to the user
-   - Execute tools when requested
-4. Add tool results to the conversation
-5. Repeat
-
-## Key Methods
+Creates a new Agent instance with the provided dependencies.
 
 ### Run
 
@@ -54,67 +41,93 @@ The `Run` method implements the main conversation loop:
 func (a *Agent) Run(ctx context.Context) error
 ```
 
-The main loop of the agent that manages the conversation flow and tool execution.
+The primary execution loop of the Agent that:
+1. Manages the conversation state
+2. Handles user input
+3. Sends messages to Claude
+4. Processes Claude's responses
+5. Executes tools when requested
+6. Returns tool results to Claude
 
 ### executeTool
 
 ```go
-func (a *Agent) executeTool(id, name string, input json.RawMessage) anthropic.ContentBlockParamUnion
+func (a *Agent) executeTool(
+    id, name string,
+    input json.RawMessage,
+) anthropic.ContentBlockParamUnion
 ```
 
-Executes a requested tool and returns its results in the format expected by the Anthropic API.
+Executes a specific tool by:
+1. Finding the matching tool definition by name
+2. Unmarshaling and passing the input parameters
+3. Executing the tool function
+4. Formatting the result (or error) as a tool response
 
 ### runInference
 
 ```go
-func (a *Agent) runInference(ctx context.Context, conversation []anthropic.MessageParam) (*anthropic.Message, error)
+func (a *Agent) runInference(
+    ctx context.Context,
+    conversation []anthropic.MessageParam,
+) (*anthropic.Message, error)
 ```
 
-Makes an API call to Claude with the current conversation history and available tools.
+Sends the current conversation to Claude and retrieves a response by:
+1. Configuring the available tools in the Claude API format
+2. Setting up the API request with the conversation history
+3. Calling the Anthropic API
+4. Returning Claude's response
 
-## Terminal UI
+## Conversation Flow
 
-The agent implements a simple but effective terminal UI with color-coded output:
+The Agent implements a sophisticated conversation flow:
 
-- **Blue**: User messages
-- **Yellow**: Claude's text responses
-- **Green**: Tool executions
+1. **User Input Phase**:
+   - Prompt the user for input
+   - Add the user's message to the conversation history
 
-## Error Handling
+2. **Claude Response Phase**:
+   - Send the conversation to Claude via the API
+   - Process Claude's response
+   - Display text content to the user
 
-The agent properly handles errors from:
-- Tool execution
-- API communication
-- User input processing
+3. **Tool Execution Phase** (if tools are used):
+   - Identify tool usage in Claude's response
+   - Execute the requested tools
+   - Format and collect tool results
 
-## Design Patterns
+4. **Result Processing Phase**:
+   - Add tool results to the conversation
+   - Send the updated conversation back to Claude (if tools were used)
+   - Otherwise, return to the user input phase
 
-This module follows several design patterns:
+## Key Features
 
-1. **Dependency Injection**: Dependencies are passed to the agent constructor
-2. **Strategy Pattern**: The user input function is an interchangeable strategy
-3. **Command Pattern**: Tools are encapsulated commands with standardized interfaces
+- **Stateful Conversation Management**: Maintains the full conversation history
+- **Elegant Tool Execution**: Seamlessly handles tool requests from Claude
+- **Clean Terminal UI**: Uses ANSI color codes for a pleasant terminal experience
+- **Proper Error Handling**: Comprehensive error handling throughout the process
 
-## Usage Example
+## Technical Details
 
+### Color Coding
+
+The agent uses ANSI color codes to enhance the terminal experience:
+- 🔵 Blue (\u001b[94m) for user messages
+- 🟡 Yellow (\u001b[93m) for Claude's responses
+- 🟢 Green (\u001b[92m) for tool executions
+
+### Claude API Integration
+
+The agent uses Claude 3 Sonnet (latest) as the default model:
 ```go
-client := anthropic.NewClient()
-scanner := bufio.NewScanner(os.Stdin)
-getUserMessage := func() (string, bool) {
-    if !scanner.Scan() {
-        return "", false
-    }
-    return scanner.Text(), true
-}
-
-tools := []ToolDefinition{
-    ReadFileDefinition,
-    ListFilesDefinition,
-    EditFileDefinition,
-}
-agent := NewAgent(&client, getUserMessage, tools)
-
-if err := agent.Run(context.TODO()); err != nil {
-    fmt.Printf("Error: %s\n", err)
-}
+anthropic.ModelClaude3_7SonnetLatest
 ```
+
+### Tool Interface
+
+The agent handles tools through a standardized interface that:
+1. Registers tools with Claude in the appropriate format
+2. Dispatches tool calls to the correct implementation
+3. Formats results in Claude's expected response format

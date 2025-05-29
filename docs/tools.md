@@ -1,10 +1,16 @@
-# Tools Interface 🧰
+# Tool Framework
+
+![Component](https://img.shields.io/badge/Component-Framework-purple)
 
 ## Overview
 
-The `tools.go` file defines the core interface for all tools that can be used by Claude within the application. It provides a standardized structure that allows for consistent handling of tool definitions, execution, and schema generation.
+The tool framework enables Claude to interact with the file system and perform operations beyond basic conversation. This framework provides a standardized way to define, register, and execute tools with proper parameter validation and error handling.
 
-## ToolDefinition Struct
+## Core Components
+
+The tool system consists of two main components:
+
+### 1. Tool Definition Interface (tools.go)
 
 ```go
 type ToolDefinition struct {
@@ -15,82 +21,100 @@ type ToolDefinition struct {
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `Name` | The name of the tool (used by Claude to invoke it) |
-| `Description` | Human-readable description of what the tool does |
-| `InputSchema` | JSON schema describing the tool's input parameters |
-| `Function` | The Go function that implements the tool's functionality |
+This structure encapsulates everything needed to define a tool:
+- **Name**: The unique identifier for the tool
+- **Description**: A human-readable description of the tool's purpose
+- **InputSchema**: JSON schema defining the tool's parameters
+- **Function**: The actual implementation that executes the tool's logic
 
-## Design Philosophy
-
-The `ToolDefinition` struct embodies several key design principles:
-
-1. **Standardization**: All tools follow the same interface pattern
-2. **Self-documentation**: Each tool carries its own description and schema
-3. **Encapsulation**: Implementation details are hidden behind a consistent interface
-4. **Simplicity**: The interface is minimal but complete
-
-## Function Signature
+### 2. Schema Generation (schema.go)
 
 ```go
-func(input json.RawMessage) (string, error)
+func GenerateSchema[T any]() anthropic.ToolInputSchemaParam
 ```
 
-Every tool function:
-- Accepts a JSON input as a `json.RawMessage`
-- Returns a string result or an error
-- Is responsible for unmarshaling its own input
-- Must handle its own error cases
+This generic function automatically generates JSON schema for tool parameters from Go struct types, using:
+- Struct tags for parameter descriptions
+- Type information for validation constraints
+- The jsonschema reflection library for schema generation
 
-## Integration with Anthropic API
+## Tool Implementation Pattern
 
-The `ToolDefinition` structure is designed to work seamlessly with the Anthropic API:
-
-- The `Name` field corresponds to the tool name Claude will use
-- The `Description` field helps Claude understand when to use the tool
-- The `InputSchema` provides type information for Claude's tool calls
-- The `Function` implements the actual behavior invoked when Claude uses the tool
-
-## Example Definition
+All tools in the system follow a consistent implementation pattern:
 
 ```go
-var ExampleToolDefinition = ToolDefinition{
-    Name:        "example_tool",
-    Description: "A simple example tool that does something useful.",
-    InputSchema: ExampleToolInputSchema,
-    Function:    ExampleToolFunction,
+// 1. Define the tool's input structure
+type SomeToolInput struct {
+    Param1 string `json:"param1" jsonschema_description:"Description of param1"`
+    Param2 int    `json:"param2" jsonschema_description:"Description of param2"`
+}
+
+// 2. Generate the input schema
+var SomeToolInputSchema = GenerateSchema[SomeToolInput]()
+
+// 3. Create the tool definition
+var SomeToolDefinition = ToolDefinition{
+    Name:        "some_tool",
+    Description: "Description of what the tool does",
+    InputSchema: SomeToolInputSchema,
+    Function:    SomeTool,
+}
+
+// 4. Implement the tool function
+func SomeTool(input json.RawMessage) (string, error) {
+    // Parse input
+    var in SomeToolInput
+    if err := json.Unmarshal(input, &in); err != nil {
+        return "", err
+    }
+    
+    // Validate input (if needed)
+    // ...
+    
+    // Execute tool logic
+    // ...
+    
+    // Return result or error
+    return result, nil
 }
 ```
 
-## How Tools Are Registered
+## Key Features
 
-Tools are registered in the `main.go` file by adding them to the tools slice passed to the Agent constructor:
+### Standardized Error Handling
 
-```go
-tools := []ToolDefinition{
-    ReadFileDefinition,
-    ListFilesDefinition,
-    EditFileDefinition,
-    // Add new tools here
-}
-```
+All tools follow a consistent error handling pattern:
+1. Return descriptive error messages with context
+2. Use proper Go error wrapping for nested errors
+3. Validate parameters before execution
 
-## Creating New Tools
+### Automatic Parameter Validation
 
-To create a new tool, you need to:
+The JSON schema system provides automatic validation of:
+- Required vs. optional parameters
+- Parameter types and constraints
+- Structured description of parameters
 
-1. Define an input struct with appropriate JSON tags
-2. Generate a schema for the input struct using `GenerateSchema`
-3. Implement the tool function with the standard signature
-4. Create a `ToolDefinition` instance with the appropriate fields
-5. Add the tool to the list in `main.go`
+### Clean Extensibility
 
-## Benefits of the Design
+Adding new tools is straightforward:
+1. Create a new file following the pattern above
+2. Implement the tool's logic
+3. Register the tool in main.go
 
-This design provides several advantages:
+No changes to the core agent or framework are required.
 
-1. **Extensibility**: New tools can be added without changing the core architecture
-2. **Separation of Concerns**: Each tool is self-contained in its own file
-3. **Consistency**: All tools follow the same pattern
-4. **Ease of Testing**: Tools can be tested independently
+## Available Tools
+
+The framework includes several built-in tools:
+
+| Tool | File | Purpose |
+|------|------|---------|
+| `read_file` | read_file.go | Read file contents |
+| `list_files` | list_files.go | List files in a directory |
+| `edit_file` | edit_file.go | Modify file contents |
+| `create_dir` | create_dir.go | Create directories |
+| `create_file` | create_file.go | Create new files |
+| `git_clone` | git_clone.go | Clone git repositories |
+
+For detailed documentation on each tool, see their respective documentation files.

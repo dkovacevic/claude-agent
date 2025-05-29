@@ -1,10 +1,14 @@
-# Read File Tool 📖
+# Read File Tool (read_file.go)
+
+![Tool](https://img.shields.io/badge/Tool-File%20System-green)
 
 ## Overview
 
-The `read_file.go` module implements a tool that allows Claude to read the contents of files from the user's file system. This gives Claude the ability to analyze, interpret, and work with existing files, providing more contextual and useful assistance.
+The `read_file` tool provides Claude with the ability to read the contents of files from the local file system. This enables Claude to analyze code, view configuration files, or read any text file to provide more contextual assistance.
 
-## Tool Definition
+## Implementation
+
+### Tool Definition
 
 ```go
 var ReadFileDefinition = ToolDefinition{
@@ -15,7 +19,7 @@ var ReadFileDefinition = ToolDefinition{
 }
 ```
 
-## Input Schema
+### Input Parameters
 
 ```go
 type ReadFileInput struct {
@@ -23,82 +27,67 @@ type ReadFileInput struct {
 }
 ```
 
-| Parameter | Description |
-|-----------|-------------|
-| `Path`    | The relative path to the file to be read |
+The tool accepts a single parameter:
+- **path**: The relative path to the file that should be read
 
-## Functionality
+### Function Implementation
 
-The `ReadFile` function:
+```go
+func ReadFile(input json.RawMessage) (string, error) {
+    var in ReadFileInput
+    if err := json.Unmarshal(input, &in); err != nil {
+        return "", err
+    }
+    data, err := os.ReadFile(in.Path)
+    if err != nil {
+        return "", err
+    }
+    return string(data), nil
+}
+```
 
-1. Takes a file path as input
-2. Reads the entire contents of the file into memory
-3. Returns the file contents as a string
+The implementation:
+1. Parses the input parameters from JSON
+2. Uses `os.ReadFile` to read the file contents
+3. Returns the file contents as a string or an error
 
-## Implementation Details
+## Usage Example
 
-### File Reading Logic
-
-The implementation uses Go's standard library `os.ReadFile` function, which:
-- Reads the entire file into memory at once
-- Handles file opening and closing automatically
-- Provides appropriate error messages for common failure cases
-
-### Safety Considerations
-
-The tool description explicitly warns against using it with directory paths to prevent misuse.
-
-## Example Usage
-
-From Claude's perspective:
+When Claude needs to read a file, it might use this tool as follows:
 
 ```
-You: Can you show me what's in the go.mod file?
+Claude: I'll check the contents of the README.md file for you.
 
-Claude: I'll read the go.mod file for you to see its contents.
+tool: read_file({"path": "README.md"})
+# Claude Agent CLI 🤖
 
-tool: read_file({"path":"go.mod"})
-module agent
+![Claude Agent CLI](https://img.shields.io/badge/Claude-AI%20Assistant-5A67D8)
+![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-go 1.24.1
+## Overview
 
-require (
-	github.com/anthropics/anthropic-sdk-go v1.2.1
-	github.com/invopop/jsonschema v0.13.0
-)
-
-require (
-	cloud.google.com/go/auth v0.7.2 // indirect
-	cloud.google.com/go/auth/oauth2adapt v0.2.3 // indirect
-	cloud.google.com/go/compute/metadata v0.5.0 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.30.3 // indirect
-	...
-)
-
-Claude: Here's what's in the go.mod file:
-
-The file defines a Go module named "agent" using Go version 1.24.1.
-
-It has two direct dependencies:
-1. github.com/anthropics/anthropic-sdk-go v1.2.1 - The Anthropic SDK for Go
-2. github.com/invopop/jsonschema v0.13.0 - A library for JSON schema generation
-
-The file also lists several indirect dependencies that are required by these primary dependencies, including various AWS SDK components, Google Cloud libraries, and other utility packages.
-
-This confirms the project is using the Anthropic API to communicate with Claude and using jsonschema for handling the tool input schemas.
+Claude Agent CLI is a powerful command-line interface...
 ```
+
+## Security Considerations
+
+This tool:
+- Provides access to any file readable by the process
+- Should be used with appropriate caution regarding sensitive files
+- Returns clear error messages if the file cannot be read (e.g., due to permissions or non-existence)
 
 ## Error Handling
 
-The tool handles several potential error scenarios:
+The tool handles several error conditions:
+- JSON parsing errors for invalid input
+- File not found errors
+- Permission errors
+- Other I/O errors that might occur during reading
 
-| Error Scenario | Handling |
-|----------------|----------|
-| Invalid input JSON | Returns a descriptive error message |
-| File not found | Returns appropriate error |
-| Permission issues | Propagates the system error message |
-| File read errors | Returns the specific error |
+All errors are passed through to Claude to allow appropriate response generation.
 
-## Performance Considerations
+## Related Tools
 
-The current implementation reads the entire file into memory, which is efficient for small to medium-sized files. For very large files, this could potentially cause memory issues, but for typical usage in a CLI environment, this approach is appropriate.
+- **list_files**: Complementary tool for discovering files that can be read
+- **edit_file**: For modifying file contents after reading them
