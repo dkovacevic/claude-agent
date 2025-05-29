@@ -8,7 +8,7 @@ import (
 
 var ListFilesDefinition = ToolDefinition{
     Name:        "list_files",
-    Description: "List files and directories at a given path. Defaults to current directory.",
+	Description: "List files and directories at a given path. If no path is provided, lists files in the current directory.",
     InputSchema: ListFilesInputSchema,
     Function:    ListFiles,
 }

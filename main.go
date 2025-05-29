@@ -26,6 +26,7 @@ func main() {
         EditFileDefinition,
         GitCloneDefinition,
         CreateDirDefinition,
+        CreateFileDefinition,
     }
     agent := NewAgent(&client, getUserMessage, tools)
 
