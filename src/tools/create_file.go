@@ -10,7 +10,8 @@ import (
 // CreateFileDefinition defines a tool that creates a file with given content.
 var CreateFileDefinition = ToolDefinition{
 	Name:        "create_file",
-	Description: "Create a file at the specified path with provided content, creating parent directories if necessary.",
+	Description: `Create a file at the specified path with provided content, creating parent directories if necessary.
+	Don't use this tool for files containing more than 1000 characters. For bigger file use AppendFile tool`,
 	InputSchema: CreateFileInputSchema,
 	Function:    CreateFile,
 }
