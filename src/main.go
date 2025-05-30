@@ -25,10 +25,11 @@ func main() {
         tools.ReadFileDefinition,
         tools.ListFilesDefinition,
         tools.EditFileDefinition,
-        tools.GitCloneDefinition,
         tools.CreateDirDefinition,
         //tools.CreateFileDefinition,
         tools.AppendFileDefinition,
+        tools.GitCloneDefinition,
+        tools.GitPatchDefinition,
     }
     agent := NewAgent(&client, getUserMessage, tools)
 

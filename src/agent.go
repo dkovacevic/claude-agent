@@ -27,6 +27,8 @@ func (a *Agent) Run(ctx context.Context) error {
     conversation := []anthropic.MessageParam{}
     fmt.Println("Chat with Claude (use 'ctrl-c' to quit)")
 
+    const maxHistory = 20
+
     readUserInput := true
     for {
         if readUserInput {
@@ -38,6 +40,13 @@ func (a *Agent) Run(ctx context.Context) error {
             conversation = append(conversation, anthropic.NewUserMessage(
                 anthropic.NewTextBlock(input),
             ))
+        }
+
+        // Before calling runInference, trim history to the last maxHistory messages:
+        if len(conversation) > maxHistory {
+            fmt.Printf("\033[31mTrimming conversation history (%d) to the last %d messages.\033[0m\n",
+            		len(conversation), maxHistory)
+            conversation = conversation[len(conversation)-maxHistory:]
         }
 
         msg, err := a.runInference(ctx, conversation)
@@ -67,10 +76,7 @@ func (a *Agent) Run(ctx context.Context) error {
     return nil
 }
 
-func (a *Agent) executeTool(
-    id, name string,
-    input json.RawMessage,
-) anthropic.ContentBlockParamUnion {
+func (a *Agent) executeTool(id, name string, input json.RawMessage) anthropic.ContentBlockParamUnion {
     for _, t := range a.tools {
         if t.Name == name {
             fmt.Printf("\u001b[92mtool\u001b[0m: %s(%s)\n", name, input)

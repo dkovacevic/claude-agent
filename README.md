@@ -84,3 +84,8 @@ For detailed information about specific components, please refer to the followin
 - [Main Application](docs/main.md) - Entry point and initialization
 - [Agent Implementation](docs/agent.md) - Core conversation handling
 - [Tool Framework](docs/tools.md) - Tool system architecture
+
+## Prompts
+- Clone https://github.com/dkovacevic/payrolls into a tmp dir. find V1__init.sql file and build full DB documentation in a markdown file.
+- Write me a comprehensive documentation of this project. Use the markdown. Create one md file as an overview and then separate files explaining each source code file. Make it beautiful and impressive and cool
+- Clone https://github.com/dkovacevic/payrolls into a tmp dir. Build me OpenAPI docs for just EmployeesResource.java class. Store the result into a YAML file

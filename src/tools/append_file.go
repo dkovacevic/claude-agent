@@ -7,16 +7,21 @@ import (
     "path"
 )
 
+const MaxContentLength = 4000
+
+// AppendFileDefinition defines a tool for appending content to a file.
 var AppendFileDefinition = ToolDefinition{
-    Name:        "append_file",
-    Description: "Append content to a text file at the specified path. Content must not exceed 1000 characters. If the file or its parent directories do not exist, they will be created.",
-    InputSchema: GenerateSchema[AppendFileInput](),
-    Function:    AppendFile,
+	Name:        "append_file",
+	Description: fmt.Sprintf(`Append content to a text file at the specified path. Content must not exceed %d characters and cannot be empty string.
+	 If the file or its parent directories do not exist, they will be created.
+	 Example: {"path": "tmp/example.txt", "content": "This is example content."}`, MaxContentLength),
+	InputSchema: GenerateSchema[AppendFileInput](),
+	Function:    AppendFile,
 }
 
 type AppendFileInput struct {
-    Path    string `json:"path" jsonschema_description:"The file path to append to."`
-    Content string `json:"content" jsonschema_description:"The content to append (max 1000 characters)."`
+    Path    string `json:"path" jsonschema_description:"The file path to append to. Mandatory field"`
+    Content string `json:"content" jsonschema_description:"The content to append. Mandatory field. Cannot be empty string"`
 }
 
 var AppendFileInputSchema = GenerateSchema[AppendFileInput]()
@@ -26,11 +31,20 @@ func AppendFile(input json.RawMessage) (string, error) {
     if err := json.Unmarshal(input, &in); err != nil {
         return "", fmt.Errorf("invalid input: %w", err)
     }
+
     if in.Path == "" {
         return "", fmt.Errorf("path must be provided")
     }
-    if len(in.Content) > 1000 {
-        return "", fmt.Errorf("content exceeds 1000 character limit")
+
+    if in.Content == "" {
+        fmt.Println("\033[31mError: Content must be provided. JSON object must contain a non-empty 'content' field.\033[0m")
+        return "", fmt.Errorf("content must be provided. JSON object must contain a non-empty 'content' field")
+    }
+
+    // Check content size against MaxContentLength
+    if len(in.Content) > MaxContentLength {
+        fmt.Printf("\033[31mError: Content exceeds %d characters. Got %d characters.\033[0m\n", MaxContentLength, len(in.Content))
+        return "", fmt.Errorf("content exceeds %d character limit", MaxContentLength)
     }
 
     // Ensure parent directory exists
